@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>कैलेंडर नोटपैड</title>
+<style>
+:root{--bg:#f6f8fc;--card:#fff;--ink:#1c2b4a;--mute:#6b7a99;--line:#d5deef;--main:#2358d6;--note:#ffc93c;--noteink:#3b2a00;--today:#2358d6;--red:#d32f2f;--redbg:#fde8e8;--rednote:#8a1111}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1526;--card:#17223d;--ink:#e6eeff;--mute:#9bb0d6;--line:#2b3b63;--main:#6b9bff;--note:#e0a800;--noteink:#1a1200;--today:#6b9bff;--red:#ff7b7b;--redbg:#3a1d2a;--rednote:#6b0d0d}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans Devanagari","Mangal",system-ui,sans-serif}
+main{max-width:480px;margin:0 auto;padding:14px}
+.head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.head h1{font-size:22px;margin:0}
+.head button{font-size:22px;width:44px;height:44px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.dow{text-align:center;font-size:14px;color:var(--mute);padding:4px 0}
+.day{aspect-ratio:1;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font-size:18px;font-weight:600;position:relative;padding:0}
+.day.empty{border:none;background:none}
+.day.today{border:2px solid var(--today)}
+.day.off{color:var(--red)}
+.day.hol{background:var(--redbg);border-color:var(--red)}
+.day.has{background:var(--note);color:var(--noteink);border-color:var(--note)}
+.day.has.off{color:var(--rednote)}
+.day.has.hol{border-color:var(--red)}
+.dow.off{color:var(--red)}
+.hlist{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:16px}
+.hlist div{padding:3px 0;color:var(--red)}
+.hlist small{color:var(--mute)}
+.tools{display:flex;gap:8px;margin-top:14px}
+.tools button{flex:1;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font-size:16px}
+.legend{margin-top:12px;font-size:14px;color:var(--mute);text-align:center}
+.legend b{display:inline-block;width:14px;height:14px;border-radius:4px;background:var(--note);vertical-align:middle;margin-right:4px}
+.shade{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:5}
+.shade.on{display:flex}
+.sheet{width:100%;max-width:480px;background:var(--card);border-radius:20px 20px 0 0;padding:16px;padding-bottom:max(16px,env(safe-area-inset-bottom))}
+.sheet h2{margin:0 0 8px;font-size:20px}
+textarea{width:100%;height:180px;font:inherit;font-size:18px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);resize:none}
+.btns{display:flex;gap:8px;margin-top:10px}
+.btns button{flex:1;padding:12px;font:inherit;font-size:17px;font-weight:700;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.btns .save{background:var(--main);color:#fff;border-color:var(--main)}
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:20px;display:none;z-index:9}
+</style>
+</head>
+<body>
+<main>
+  <div class="head">
+    <button onclick="move(-1)" aria-label="पिछला महीना">‹</button>
+    <h1 id="title"></h1>
+    <button onclick="move(1)" aria-label="अगला महीना">›</button>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="tools">
+    <button onclick="goToday()">आज</button>
+    <button onclick="backup()">बैकअप कॉपी</button>
+    <button onclick="restore()">बैकअप डालें</button>
+  </div>
+  <div class="hlist" id="hlist"></div>
+  <div class="legend"><b></b>पीली तारीख = नोट लिखा है &nbsp; <span style="color:var(--red)">लाल = छुट्टी (शनि-रवि और सरकारी)</span></div>
+</main>
+
+<div class="shade" id="shade" onclick="if(event.target===this)closeSheet()">
+  <div class="sheet">
+    <h2 id="sheetTitle"></h2>
+    <textarea id="txt" placeholder="यहाँ अपना नोट लिखिए..."></textarea>
+    <div class="btns">
+      <button onclick="closeSheet()">बंद करें</button>
+      <button onclick="del()">मिटाएँ</button>
+      <button class="save" onclick="save()">सेव करें</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var KEY = 'calendar_notes_v1';
+var MONTHS = ['जनवरी','फ़रवरी','मार्च','अप्रैल','मई','जून','जुलाई','अगस्त','सितंबर','अक्टूबर','नवंबर','दिसंबर'];
+var DAYS = ['रवि','सोम','मंगल','बुध','गुरु','शुक्र','शनि'];
+var now = new Date(), year = now.getFullYear(), month = now.getMonth(), openKey = null;
+var notes = {};
+/* हर साल की पक्की सरकारी छुट्टियाँ (महीना-तारीख) */
+var FIXED = {'1-26':'गणतंत्र दिवस','8-15':'स्वतंत्रता दिवस','10-2':'गांधी जयंती','12-25':'क्रिसमस'};
+/* 2026 की केंद्र सरकार की राजपत्रित छुट्टियाँ (DoPT सूची)। ईद, बकरीद, मुहर्रम, मिलाद चाँद दिखने पर एक दिन आगे-पीछे हो सकती हैं */
+var HOL2026 = {'3-4':'होली','3-21':'ईद-उल-फ़ित्र','3-26':'रामनवमी','3-31':'महावीर जयंती','4-3':'गुड फ़्राइडे','5-1':'बुद्ध पूर्णिमा','5-27':'बकरीद','6-26':'मुहर्रम','8-26':'ईद-ए-मिलाद','9-4':'जन्माष्टमी','10-20':'दशहरा','11-8':'दीवाली','11-24':'गुरु नानक जयंती'};
+function holiday(y,m,d){
+  var k=(m+1)+'-'+d;
+  if (FIXED[k]) return FIXED[k];
+  if (y===2026 && HOL2026[k]) return HOL2026[k];
+  return '';
+}
+
+try { notes = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e) { notes = {}; }
+
+function persist(){
+  try { localStorage.setItem(KEY, JSON.stringify(notes)); return true; }
+  catch(e){ toast('सेव नहीं हो पाया। ब्राउज़र की स्टोरेज बंद हो सकती है।'); return false; }
+}
+function keyOf(y,m,d){ return y+'-'+(m+1)+'-'+d; }
+function toast(t){
+  var el = document.getElementById('toast'); el.textContent = t; el.style.display = 'block';
+  setTimeout(function(){ el.style.display = 'none'; }, 1800);
+}
+
+function draw(){
+  document.getElementById('title').textContent = MONTHS[month] + ' ' + year;
+  var h = '';
+  DAYS.forEach(function(d,i){ h += '<div class="dow'+((i===0||i===6)?' off':'')+'">'+d+'</div>'; });
+  var hl = '';
+  var first = new Date(year, month, 1).getDay();
+  var count = new Date(year, month+1, 0).getDate();
+  for (var i=0;i<first;i++) h += '<div class="day empty"></div>';
+  for (var d=1; d<=count; d++){
+    var k = keyOf(year, month, d), cls = 'day';
+    var wd = (first + d - 1) % 7, hn = holiday(year, month, d);
+    if (wd===0 || wd===6) cls += ' off';
+    if (hn){ cls += ' off hol'; hl += '<div>'+d+' '+MONTHS[month]+' - '+hn+'</div>'; }
+    if (notes[k]) cls += ' has';
+    if (d===now.getDate() && month===now.getMonth() && year===now.getFullYear()) cls += ' today';
+    h += '<button class="'+cls+'" onclick="openDay('+d+')">'+d+'</button>';
+  }
+  document.getElementById('grid').innerHTML = h;
+  var box = document.getElementById('hlist');
+  box.innerHTML = hl || '<small>इस महीने कोई सरकारी छुट्टी नहीं है</small>';
+}
+function move(n){
+  month += n;
+  if (month<0){ month=11; year--; }
+  if (month>11){ month=0; year++; }
+  draw();
+}
+function goToday(){ year = now.getFullYear(); month = now.getMonth(); draw(); }
+
+function openDay(d){
+  openKey = keyOf(year, month, d);
+  var hn = holiday(year, month, d);
+  document.getElementById('sheetTitle').textContent = d+' '+MONTHS[month]+' '+year + (hn ? ' - ' + hn : '');
+  document.getElementById('txt').value = notes[openKey] || '';
+  document.getElementById('shade').classList.add('on');
+  document.getElementById('txt').focus();
+}
+function closeSheet(){ document.getElementById('shade').classList.remove('on'); openKey = null; }
+function save(){
+  var v = document.getElementById('txt').value.trim();
+  if (v) notes[openKey] = v; else delete notes[openKey];
+  if (persist()){ toast(v ? 'नोट सेव हो गया' : 'नोट खाली था, हटा दिया'); closeSheet(); draw(); }
+}
+function del(){
+  if (!notes[openKey]) { closeSheet(); return; }
+  if (!confirm('इस तारीख का नोट मिटा दें?')) return;
+  delete notes[openKey];
+  if (persist()){ toast('नोट मिटा दिया'); closeSheet(); draw(); }
+}
+
+function backup(){
+  var text = JSON.stringify(notes);
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){ toast('बैकअप कॉपी हो गया। इसे कहीं पेस्ट करके रख लें।'); },
+      function(){ prompt('इसे कॉपी करके रख लें:', text); });
+  } else { prompt('इसे कॉपी करके रख लें:', text); }
+}
+function restore(){
+  var t = prompt('बैकअप का टेक्स्ट यहाँ पेस्ट करें:');
+  if (!t) return;
+  try {
+    var o = JSON.parse(t);
+    if (typeof o !== 'object' || o === null) throw 0;
+    for (var k in o) notes[k] = o[k];
+    if (persist()){ draw(); toast('बैकअप डाल दिया'); }
+  } catch(e){ toast('यह सही बैकअप नहीं है'); }
+}
+draw();
+</script>
+</body>
+</html>
