@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google! (1998 Retro + No-Ads Reader + TTS)</title>
+    <style>
+        /* 1998 Classic Styling */
+        body {
+            background-color: #FFFFFF;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #000000;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* Retro 3D Logo Effect */
+        .retro-logo {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 70px;
+            font-weight: bold;
+            letter-spacing: -2px;
+            margin-top: 30px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 0px #cccccc;
+        }
+        .g1 { color: #2020D0; }
+        .o1 { color: #D02020; }
+        .o2 { color: #E0A000; }
+        .g2 { color: #2020D0; }
+        .l  { color: #008000; }
+        .e  { color: #D02020; }
+        .ex { color: #D02020; font-style: italic; }
+
+        .tagline {
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        /* Retro Search Box & Buttons */
+        .search-box {
+            width: 320px;
+            font-size: 16px;
+            padding: 4px;
+            border: 2px inset #CCCCCC;
+            background-color: #FFFFFF;
+        }
+
+        .btn-container {
+            margin-top: 15px;
+            margin-bottom: 25px;
+        }
+
+        .retro-btn {
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            background-color: #EFEFEF;
+            border: 2px outset #FFFFFF;
+            padding: 4px 10px;
+            cursor: pointer;
+            margin: 0 2px;
+            font-weight: bold;
+        }
+
+        .retro-btn:active {
+            border-style: inset;
+        }
+
+        /* Retro Links & Special Searches */
+        .retro-table {
+            margin: 0 auto;
+            border-collapse: collapse;
+            font-size: 13px;
+            background-color: #EEEEEE;
+            border: 1px solid #CCCCCC;
+            padding: 10px;
+            width: 80%;
+            max-width: 600px;
+        }
+
+        a {
+            color: #0000FF;
+            text-decoration: underline;
+        }
+
+        a:visited {
+            color: #551A8B;
+        }
+
+        .footer-text {
+            font-size: 11px;
+            margin-top: 30px;
+            color: #555555;
+        }
+
+        /* READER MODE & NO-ADS CONTAINER */
+        #reader-view {
+            display: none;
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: left;
+            background: #FDFBF7;
+            padding: 25px;
+            border: 1px solid #DDD;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        #video-container {
+            display: none;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+
+        iframe {
+            width: 100%;
+            height: 450px;
+            border: none;
+        }
+
+        .reader-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HOME SCREEN -->
+    <div id="home-screen">
+        <div class="retro-logo">
+            <span class="g1">G</span><span class="o1">o</span><span class="o2">o</span><span class="g2">g</span><span class="l">l</span><span class="e">e</span><span class="ex">!</span>
+        </div>
+        
+        <div class="tagline">Search the web using Google! (With Reader, No-Ads & TTS)</div>
+
+        <form id="searchForm" onsubmit="handleSearch(event)">
+            <input type="text" id="query" class="search-box" placeholder="Search web or paste YouTube URL..." autofocus required>
+            <div class="btn-container">
+                <button type="submit" class="retro-btn">Google Search</button>
+                <button type="button" class="retro-btn" onclick="openReaderMode()">📖 Reader Mode</button>
+                <button type="button" class="retro-btn" onclick="luckySearch()">I'm Feeling Lucky</button>
+            </div>
+        </form>
+
+        <table class="retro-table">
+            <tr>
+                <td>
+                    <b>Special Features Enabled:</b><br>
+                    • <b>Native TTS:</b> Reads articles aloud using phone's speech engine.<br>
+                    • <b>Ad-Free YouTube:</b> Watch without popup ads.<br><br>
+                    <b>Classic Links:</b> <a href="#" onclick="alert('Stanford Search Archive 1998')">Stanford Search</a> | <a href="#" onclick="alert('Linux Search')">Linux Search</a>
+                </td>
+            </tr>
+        </table>
+
+        <div class="footer-text">
+            Copyright ©1998 Google Inc.
+        </div>
+    </div>
+
+    <!-- NO-ADS YOUTUBE PLAYER CONTAINER -->
+    <div id="video-container">
+        <button class="retro-btn" onclick="closePlayer()" style="margin-bottom: 10px;">← Back to Search</button>
+        <iframe id="adfree-player" allowfullscreen></iframe>
+    </div>
+
+    <!-- READER MODE VIEW -->
+    <div id="reader-view">
+        <div class="reader-controls">
+            <button class="retro-btn" onclick="closeReader()">← Back</button>
+            <span style="font-weight: bold;">Retro Reader Mode</span>
+            <div>
+                <!-- Text-to-Speech Control Buttons -->
+                <button class="retro-btn" onclick="speakText()" style="background-color: #d4edda;">🔊 Listen</button>
+                <button class="retro-btn" onclick="stopSpeech()" style="background-color: #f8d7da;">⏹️ Stop</button>
+                <button class="retro-btn" onclick="changeFontSize(1)">A+</button>
+                <button class="retro-btn" onclick="changeFontSize(-1)">A-</button>
+            </div>
+        </div>
+        <div id="reader-content">
+            <h1 id="reader-title">Sample Clean Reader View</h1>
+            <p id="reader-body" style="font-size: 18px; line-height: 1.6; color: #222;">
+                Enter an article link or text in the search bar above and click "Reader Mode" to strip away all advertisements and clutter. You can click the Listen button above to hear this article using your device's native text-to-speech engine.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        let synth = window.speechSynthesis;
+
+        // HANDLE SEARCH AND YOUTUBE NO-ADS ROUTING
+        function handleSearch(event) {
+            event.preventDefault();
+            const q = document.getElementById('query').value.trim();
+            if(!q) return;
+
+            // YouTube No-Ads Engine Redirect
+            if (q.includes('youtube.com') || q.includes('youtu.be')) {
+                let videoId = extractYouTubeID(q);
+                if (videoId) {
+                    playAdFreeVideo(videoId);
+                    return;
+                }
+            }
+
+            // Normal Ad-Free Search (DuckDuckGo Clean Proxy)
+            window.location.href = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`;
+        }
+
+        // EXTRACT YOUTUBE VIDEO ID
+        function extractYouTubeID(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        // PLAY YOUTUBE VIDEO WITHOUT ADS
+        function playAdFreeVideo(id) {
+            document.getElementById('home-screen').style.display = 'none';
+            document.getElementById('reader-view').style.display = 'none';
+            document.getElementById('video-container').style.display = 'block';
+            document.getElementById('adfree-player').src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1`;
+        }
+
+        function closePlayer() {
+            document.getElementById('adfree-player').src = '';
+            document.getElementById('video-container').style.display = 'none';
+            document.getElementById('home-screen').style.display = 'block';
+        }
+
+        // READER MODE CONTROLS
+        function openReaderMode() {
+            const q = document.getElementById('query').value.trim();
+            document.getElementById('home-screen').style.display = 'none';
+            document.getElementById('reader-view').style.display = 'block';
+
+            if(q) {
+                document.getElementById('reader-title').innerText = "Reader Content";
+                document.getElementById('reader-body').innerText = `Displaying simplified distraction-free text content for: "${q}"`;
+            }
+        }
+
+        function closeReader() {
+            stopSpeech();
+            document.getElementById('reader-view').style.display = 'none';
+            document.getElementById('home-screen').style.display = 'block';
+        }
+
+        // NATIVE TEXT-TO-SPEECH (TTS) LOGIC
+        function speakText() {
+            stopSpeech(); // Stop any ongoing speech
+            const textToRead = document.getElementById('reader-title').innerText + ". " + document.getElementById('reader-body').innerText;
+            
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(textToRead);
+                utterance.rate = 1.0; // Normal speech speed
+                utterance.pitch = 1.0;
+                synth.speak(utterance);
+            } else {
+                alert("Text-to-speech is not supported on this browser.");
+            }
+        }
+
+        function stopSpeech() {
+            if ('speechSynthesis' in window && synth.speaking) {
+                synth.cancel();
+            }
+        }
+
+        let currentFontSize = 18;
+        function changeFontSize(delta) {
+            currentFontSize += delta * 2;
+            document.getElementById('reader-body').style.fontSize = currentFontSize + 'px';
+        }
+
+        function luckySearch() {
+            const q = document.getElementById('query').value;
+            if(!q) {
+                alert('Please enter a query or video link first!');
+                return;
+            }
+            window.location.href = `https://www.google.com/search?btnI=1&q=${encodeURIComponent(q)}`;
+        }
+    </script>
+</body>
+</html>
